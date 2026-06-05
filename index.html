@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login / Signup</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Arial',sans-serif;}
+body{
+  height:100vh;
+  background:url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1950&q=80') no-repeat center center/cover;
+  position:relative;
+}
+body::before{
+  content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:0;
+}
+.box{
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:320px;
+  background:rgba(255,255,255,0.1);
+  backdrop-filter:blur(10px);
+  padding:30px;
+  border-radius:15px;
+  text-align:center;
+  color:#fff;
+  box-shadow:0 0 20px cyan;
+  z-index:1;
+}
+.box h2{margin-bottom:20px;color:cyan;text-shadow:0 0 6px cyan;}
+.box input{width:100%;padding:10px;margin:8px 0;border:none;border-radius:10px;background:rgba(255,255,255,0.2);color:#fff;}
+.box button{width:100%;padding:10px;border:none;border-radius:10px;background:cyan;color:black;font-weight:bold;cursor:pointer;margin-top:10px;}
+.box button:hover{box-shadow:0 0 15px cyan;}
+.toggle{margin-top:10px;cursor:pointer;color:cyan;text-decoration:underline;}
+</style>
+</head>
+<body>
+
+<div class="box">
+  <h2>Login</h2>
+  <input type="text" id="loginUser" placeholder="Username">
+  <input type="password" id="loginPass" placeholder="Password">
+  <button onclick="login()">Login</button>
+  <div class="toggle" onclick="showSignup()">Create Account</div>
+</div>
+
+<div class="box" style="display:none;" id="signupBox">
+  <h2>Sign Up</h2>
+  <input type="text" id="signupUser" placeholder="Choose Username">
+  <input type="password" id="signupPass" placeholder="Choose Password">
+  <button onclick="signup()">Sign Up</button>
+  <div class="toggle" onclick="showLogin()">Already have an account?</div>
+</div>
+
+<script>
+const signupBox = document.getElementById('signupBox');
+const loginBox = document.querySelector('.box');
+
+function showSignup(){
+  loginBox.style.display='none';
+  signupBox.style.display='block';
+}
+function showLogin(){
+  signupBox.style.display='none';
+  loginBox.style.display='block';
+}
+
+function signup(){
+  let u = document.getElementById('signupUser').value.trim();
+  let p = document.getElementById('signupPass').value.trim();
+  if(!u || !p){ alert("Fill all fields"); return; }
+  localStorage.setItem("username", u);
+  localStorage.setItem("password", p);
+  alert("Account created! Login now");
+  showLogin();
+}
+
+function login(){
+  let u = document.getElementById('loginUser').value.trim();
+  let p = document.getElementById('loginPass').value.trim();
+  if(u===localStorage.getItem("username") && p===localStorage.getItem("password")){
+    localStorage.setItem("logged", true);
+    window.location.href="dashboard.html";
+  }else{
+    alert("Invalid username or password!");
+  }
+}
+</script>
+
+</body>
+</html>
