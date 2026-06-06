@@ -4,7 +4,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const cron = require('node-cron');
 
 // ====== CONFIGURE HERE ======
-const BOT_TOKEN = process.env.BOT_TOKEN;
+const BOT_TOKEN = "8209785872:AAEpLlWIfgVhH0-mkGgjiqI3M9PmwrXMGr0";
 const CHAT_ID = 7190824172;           // Replace with your chat id
 // ============================
 
