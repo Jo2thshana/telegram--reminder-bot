@@ -3,129 +3,94 @@ const path = require('path');
 const TelegramBot = require('node-telegram-bot-api');
 const cron = require('node-cron');
 
-// ===== CONFIGURE HERE =====
+// ===== CONFIG =====
 const BOT_TOKEN = "8209785872:AAEpLlWIfgVhH0-mkGgjiqI3M9PmwrXMGr0";
 const CHAT_ID = "7190824172";
-// ==========================
+// ==================
 
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
 const tasksFile = path.join(__dirname, 'tasks.json');
 
-// Create tasks.json automatically
+// Create file if not exists
 if (!fs.existsSync(tasksFile)) {
-    fs.writeFileSync(tasksFile, '[]');
+  fs.writeFileSync(tasksFile, '[]');
 }
 
-// ===== START COMMAND =====
-bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(
-        msg.chat.id,
-        `🚀 Welcome to Focus Reminder Bot!
-
-Commands:
-/add HH:MM Task
-/list
-/delete TASK_NUMBER`
-    );
-});
-
-// ===== LOAD TASKS =====
+// Load tasks
 function loadTasks() {
-    return JSON.parse(fs.readFileSync(tasksFile, 'utf8'));
+  return JSON.parse(fs.readFileSync(tasksFile, 'utf8'));
 }
 
-// ===== SAVE TASKS =====
+// Save tasks
 function saveTasks(tasks) {
-    fs.writeFileSync(tasksFile, JSON.stringify(tasks, null, 2));
+  fs.writeFileSync(tasksFile, JSON.stringify(tasks, null, 2));
 }
 
-// ===== ADD TASK =====
-bot.onText(/\/add (.+)/, (msg, match) => {
-    const input = match[1];
+// START command
+bot.onText(/\/start/, (msg) => {
+  bot.sendMessage(msg.chat.id,
+`🚀 Focus Reminder Bot Ready!
 
-    const firstSpace = input.indexOf(' ');
+Use:
+remind HH:MM message
 
-    if (firstSpace === -1) {
-        bot.sendMessage(msg.chat.id, '❌ Format:\n/add 18:30 Study Java');
-        return;
-    }
-
-    const time = input.substring(0, firstSpace);
-    const task = input.substring(firstSpace + 1);
-
-    const tasks = loadTasks();
-
-    tasks.push({
-        time,
-        task
-    });
-
-    saveTasks(tasks);
-
-    bot.sendMessage(
-        msg.chat.id,
-        `✅ Reminder Added\n⏰ ${time}\n📌 ${task}`
-    );
+Example:
+remind 10:30 drink water`);
 });
 
-// ===== LIST TASKS =====
-bot.onText(/\/list/, (msg) => {
-    const tasks = loadTasks();
+// Reminder command
+bot.on('message', (msg) => {
 
-    if (tasks.length === 0) {
-        bot.sendMessage(msg.chat.id, '📭 No reminders found.');
-        return;
-    }
+  const text = msg.text;
 
-    let text = '📋 Your Reminders:\n\n';
+  if (!text.startsWith('remind')) return;
 
-    tasks.forEach((t, index) => {
-        text += `${index + 1}. ⏰ ${t.time} → ${t.task}\n`;
-    });
+  const parts = text.split(' ');
 
-    bot.sendMessage(msg.chat.id, text);
+  if (parts.length < 3) {
+    bot.sendMessage(msg.chat.id,
+      '❌ Format:\nremind HH:MM message');
+    return;
+  }
+
+  const time = parts[1];
+  const task = parts.slice(2).join(' ');
+
+  const tasks = loadTasks();
+
+  tasks.push({ time, task });
+
+  saveTasks(tasks);
+
+  bot.sendMessage(
+    msg.chat.id,
+    `✅ Reminder saved!\n⏰ ${time}\n📝 ${task}`
+  );
 });
 
-// ===== DELETE TASK =====
-bot.onText(/\/delete (\d+)/, (msg, match) => {
-    const index = parseInt(match[1]) - 1;
-
-    const tasks = loadTasks();
-
-    if (index < 0 || index >= tasks.length) {
-        bot.sendMessage(msg.chat.id, '❌ Invalid task number');
-        return;
-    }
-
-    const removed = tasks.splice(index, 1);
-
-    saveTasks(tasks);
-
-    bot.sendMessage(
-        msg.chat.id,
-        `🗑 Deleted: ${removed[0].task}`
-    );
-});
-
-// ===== CHECK REMINDERS EVERY MINUTE =====
+// Check reminders every minute
 cron.schedule('* * * * *', () => {
 
-    const current = new Date().toTimeString().slice(0, 5);
+  const current =
+    new Date().toTimeString().slice(0, 5);
 
-    const tasks = loadTasks();
+  const tasks = loadTasks();
 
-    tasks.forEach((t) => {
+  tasks.forEach((t, index) => {
 
-        if (t.time === current) {
+    if (t.time === current) {
 
-            bot.sendMessage(
-                CHAT_ID,
-                `⏰ Reminder:\n${t.task}`
-            );
-        }
-    });
+      bot.sendMessage(
+        CHAT_ID,
+        `⏰ Reminder:\n${t.task}`
+      );
+
+      tasks.splice(index, 1);
+
+      saveTasks(tasks);
+    }
+  });
 });
 
-// ===== TEST MESSAGE =====
-bot.sendMessage(CHAT_ID, '🚀 Bot started and ready!');
+console.log("Bot running...");
