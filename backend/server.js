@@ -94,3 +94,7 @@ cron.schedule('* * * * *', () => {
 });
 
 console.log("Bot running...");
+
+setInterval(() => {
+  console.log("Bot is alive...");
+}, 60000);
