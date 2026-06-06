@@ -5,14 +5,13 @@ const cron = require('node-cron');
 
 // ===== CONFIG =====
 const BOT_TOKEN = "8209785872:AAEpLlWIfgVhH0-mkGgjiqI3M9PmwrXMGr0";
-const CHAT_ID = "7190824172";
 // ==================
 
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
 const tasksFile = path.join(__dirname, 'tasks.json');
 
-// Create file if not exists
+// Create tasks.json if not exists
 if (!fs.existsSync(tasksFile)) {
   fs.writeFileSync(tasksFile, '[]');
 }
@@ -29,17 +28,29 @@ function saveTasks(tasks) {
 
 // START command
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id,
-`🚀 Focus Reminder Bot Ready!
 
-Use:
+  bot.sendMessage(
+    msg.chat.id,
+
+`🚀 Focus Reminder Bot
+
+Commands:
+
+1️⃣ Add Reminder
 remind HH:MM message
 
 Example:
-remind 10:30 drink water`);
+remind 14:30 drink water
+
+2️⃣ View Reminders
+/list
+
+3️⃣ Delete Reminder
+/delete 1`
+  );
 });
 
-// Reminder command
+// ADD REMINDER
 bot.on('message', (msg) => {
 
   const text = msg.text;
@@ -49,8 +60,12 @@ bot.on('message', (msg) => {
   const parts = text.split(' ');
 
   if (parts.length < 3) {
-    bot.sendMessage(msg.chat.id,
-      '❌ Format:\nremind HH:MM message');
+
+    bot.sendMessage(
+      msg.chat.id,
+      '❌ Format:\nremind HH:MM message'
+    );
+
     return;
   }
 
@@ -59,7 +74,11 @@ bot.on('message', (msg) => {
 
   const tasks = loadTasks();
 
-  tasks.push({ time, task });
+  tasks.push({
+    time,
+    task,
+    chatId: msg.chat.id
+  });
 
   saveTasks(tasks);
 
@@ -69,20 +88,74 @@ bot.on('message', (msg) => {
   );
 });
 
-// Check reminders every minute
+// LIST REMINDERS
+bot.onText(/\/list/, (msg) => {
+
+  const tasks = loadTasks();
+
+  if (tasks.length === 0) {
+
+    bot.sendMessage(
+      msg.chat.id,
+      '📭 No reminders found.'
+    );
+
+    return;
+  }
+
+  let text = '📋 Your Reminders:\n\n';
+
+  tasks.forEach((t, index) => {
+
+    text += `${index + 1}. ⏰ ${t.time} → ${t.task}\n`;
+  });
+
+  bot.sendMessage(msg.chat.id, text);
+});
+
+// DELETE REMINDER
+bot.onText(/\/delete (.+)/, (msg, match) => {
+
+  const index = parseInt(match[1]) - 1;
+
+  let tasks = loadTasks();
+
+  if (index < 0 || index >= tasks.length) {
+
+    bot.sendMessage(
+      msg.chat.id,
+      '❌ Invalid reminder number'
+    );
+
+    return;
+  }
+
+  const removed = tasks.splice(index, 1);
+
+  saveTasks(tasks);
+
+  bot.sendMessage(
+    msg.chat.id,
+    `🗑 Deleted: ${removed[0].task}`
+  );
+});
+
+// CHECK REMINDERS EVERY MINUTE
 cron.schedule('* * * * *', () => {
 
   const current =
     new Date().toTimeString().slice(0, 5);
 
-  const tasks = loadTasks();
+  console.log("Checking reminders:", current);
+
+  let tasks = loadTasks();
 
   tasks.forEach((t, index) => {
 
     if (t.time === current) {
 
       bot.sendMessage(
-        CHAT_ID,
+        t.chatId,
         `⏰ Reminder:\n${t.task}`
       );
 
@@ -93,8 +166,9 @@ cron.schedule('* * * * *', () => {
   });
 });
 
-console.log("Bot running...");
-
+// KEEP BOT ALIVE
 setInterval(() => {
   console.log("Bot is alive...");
 }, 60000);
+
+console.log("🚀 Bot started and ready!");
